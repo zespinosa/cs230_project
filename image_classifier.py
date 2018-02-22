@@ -5,8 +5,8 @@ import json
 
 def classifyImages():
   answers = {}
-  for filename in os.listdir('./assets'):
-    viewer = subprocess.Popen(['open', './assets/' + filename])
+  for filename in os.listdir('./assets/jpgs/'):
+    viewer = subprocess.Popen(['open', './assets/jpgs/' + filename])
     text = ''.join(raw_input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
     while not text.isdigit():
       print('Sorry, invalid response. Please try again.')
