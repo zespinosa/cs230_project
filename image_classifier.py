@@ -1,34 +1,34 @@
 import os
-import subprocess
+from subprocess import Popen, call
 import sys
 import json
 
-def classifyImages():
-  answers = {}
-  for filename in os.listdir('./assets/jpgs/'):
-    viewer = subprocess.Popen(['open', './assets/jpgs/' + filename])
-    text = ''.join(raw_input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
-    while not text.isdigit():
+def classify_images():
+  for filename in os.listdir('unlabeled'):
+    viewer = Popen(['open', 'unlabeled/' + filename])
+    # Get amount of floating vegetation
+    floating = ''.join(input('Amount of floating vegetation? (1-9)\n').split())
+    while not floating.isdigit():
       print('Sorry, invalid response. Please try again.')
-      text = ''.join(raw_input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
-    answers[filename] = text
+      floating = ''.join(input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
+    
+    # Get amount of emergent vegetation
+    emergent = ''.join(input('Amount of emergent vegetation? (1-9)\n').split())
+    while not emergent.isdigit():
+      print('Sorry, invalid response. Please try again.')
+      emergent = ''.join(input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
   
-  return answers
+    copy_command = 'cp unlabeled/' + filename + ' labeled/' + floating + '-' + emergent + '-' + filename
+    call(copy_command.split())
+
 
 
 def main():
   print('Welcome to the vegetation classifier!')
-  print('After each image appears, enter a number (or multiple numbers) to classify the type of vegetation.')
-  print('The types of vegetation are:')
-  print('\t(1) floating\n\t(2) side\n\t(3) placeholder\n\t(4) another placeholder')
-  raw_input("Press enter to begin: ")
+  print('After each image appears, enter the percentage of the image covered by floating and emergent vegetation.')
+  input("Press enter to begin: ")
 
-  labels = classifyImages()
-
-  labels = json.dumps(labels)
-  fh = open('labels.json','w')
-  fh.write(str(labels))
-  fh.close()
+  classify_images()
 
 
 if __name__ == '__main__':

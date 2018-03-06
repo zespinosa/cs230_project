@@ -1,5 +1,8 @@
 import os
 from PIL import Image
+import geopands
+
+# Converts .tifs to .png for training set
 
 current_path = os.getcwd() 
 for full_filename in os.listdir('./assets/original_tifs'):
