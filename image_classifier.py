@@ -20,6 +20,9 @@ def classify_images():
     copy_command = 'cp unlabeled/' + filename + ' labeled/' + floating + '-' + emergent + '-' + filename
     call(copy_command.split())
 
+    del_command = 'rm unlabeled/' + filename
+    call(del_command.split())
+
 
 
 def main():

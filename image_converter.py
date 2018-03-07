@@ -52,7 +52,7 @@ with rasterio.open('example-total.tif', 'w', **meta) as dst:
     # np_band = np.zeros_like(band)
     # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(np_band)
-    dst.write_band(i + 1, band)
+    # dst.write_band(i + 1, band)
   # for i, band in enumerate(data):
   #   print(i)
   #   print(band)
@@ -60,10 +60,10 @@ with rasterio.open('example-total.tif', 'w', **meta) as dst:
   #   dst.write(dest.astype(rasterio.uint8), indexes=i)
 
   
-outfile = 'translated-tif.jpg'
-try:
-  im = Image.open('example-total.tif')
-  out = im.convert('RGB')
-  out.save(outfile, 'jpg', quality=100)
-except Exception as e:
-  print(e)
+# outfile = 'translated-tif.jpg'
+# try:
+#   im = Image.open('example-total.tif')
+#   out = im.convert('RGB')
+#   out.save(outfile, 'jpg', quality=100)
+# except Exception as e:
+#   print(e)
