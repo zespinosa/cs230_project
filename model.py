@@ -8,8 +8,6 @@ from scipy import ndimage
 import tensorflow as tf
 from tensorflow.python.framework import ops
 import os
-import skimage
-from skimage import data
 
 def importImages(directory):
     imgs = []
@@ -209,4 +207,4 @@ def main():
     train_accuracy, test_accuracy, parameters = model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
               num_epochs = 30, minibatch_size = 1, print_cost = True)
 
-main()
+#main()
