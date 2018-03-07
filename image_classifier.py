@@ -1,7 +1,6 @@
 import os
 from subprocess import Popen, call
 import sys
-import json
 
 def classify_images():
   for filename in os.listdir('unlabeled'):

@@ -1,1 +1,2 @@
-./assets/original_tifs/*
+./unlabeled/*.tif
+./labeled/*.tif
