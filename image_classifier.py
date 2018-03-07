@@ -10,13 +10,13 @@ def classify_images():
     floating = ''.join(input('Amount of floating vegetation? (1-9)\n').split())
     while not floating.isdigit():
       print('Sorry, invalid response. Please try again.')
-      floating = ''.join(input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
+      floating = ''.join(input('Amount of floating vegetation? (1-9)\n').split())
     
     # Get amount of emergent vegetation
     emergent = ''.join(input('Amount of emergent vegetation? (1-9)\n').split())
     while not emergent.isdigit():
       print('Sorry, invalid response. Please try again.')
-      emergent = ''.join(input('(1) floating\n(2) side\n(3) placeholder\n(4) another placeholder\n').split())
+      emergent = ''.join(input('Amount of emergent vegetation? (1-9)\n').split())
   
     copy_command = 'cp unlabeled/' + filename + ' labeled/' + floating + '-' + emergent + '-' + filename
     call(copy_command.split())
