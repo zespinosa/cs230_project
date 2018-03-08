@@ -1,2 +1,2 @@
-./unlabeled/*.tif
-./labeled/*.tif
+./unlabeled/*
+./labeled/*
