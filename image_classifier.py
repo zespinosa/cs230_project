@@ -3,7 +3,7 @@ from subprocess import Popen, call
 import sys
 
 def classify_images():
-  for filename in os.listdir('unlabeled'):
+  for filename in sorted(os.listdir('unlabeled')):
     viewer = Popen(['open', 'unlabeled/' + filename])
     # Get amount of floating vegetation
     floating = ''.join(input('Amount of floating vegetation? (1-9)\n').split())
@@ -17,8 +17,9 @@ def classify_images():
       print('Sorry, invalid response. Please try again.')
       emergent = ''.join(input('Amount of emergent vegetation? (1-9)\n').split())
   
-    copy_command = 'cp unlabeled/' + filename + ' labeled/' + floating + '-' + emergent + '-' + filename
-    call(copy_command.split())
+    if floating != '0' and emergent != '0':
+      copy_command = 'cp unlabeled/' + filename + ' labeled/' + floating + '-' + emergent + '-' + filename
+      call(copy_command.split())
 
     del_command = 'rm unlabeled/' + filename
     call(del_command.split())
