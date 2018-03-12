@@ -153,21 +153,21 @@ def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
 
         # Do the training loop
         for epoch in range(num_epochs):
-            minibatch_cost = 0.
+            epoch_cost = 0
             num_minibatches = int(m / minibatch_size)
             seed = seed + 1
             minibatches = random_mini_batches(X_train, Y_train, minibatch_size, seed)
 
             for minibatch in minibatches:
                 (minibatch_X, minibatch_Y) = minibatch
-                _ , temp_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
-                minibatch_cost += temp_cost / num_minibatches
+                _ , minibatch_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
+                epoch_cost += minibatch_cost / num_minibatches
 
             # Print the cost every epoch
             if print_cost == True and epoch % 5 == 0:
-                print ("Cost after epoch %i: %f" % (epoch, temp_cost))
-            if print_cost == True and epoch % 1 == 0:
-                costs.append(temp_cost)
+                print ("Cost after epoch %i: %f" % (epoch, epoch_cost))
+            if print_cost == True:
+                costs.append(epoch_cost)
 
         # plot the cost
         plt.plot(np.squeeze(costs))
