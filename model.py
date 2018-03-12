@@ -103,7 +103,7 @@ def random_mini_batches(X_train, Y_train, minibatch_size, seed):
     return minibatches
 
 
-def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
+def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
@@ -146,6 +146,7 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
     init = tf.global_variables_initializer()
     # Start the session to compute the tensorflow graph
     with tf.Session() as sess:
+        #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         total_cost = 0
         # Run the initialization
         sess.run(init)
@@ -176,8 +177,11 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
         plt.show()
 
         # Calculate the correct predictions
-        predict_op = tf.argmax(Z3, 1)
-        correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
+        #predict_op = tf.argmax(Z3, 1)
+        #predict_op = Z3
+        correct_prediction = tf.abs(tf.subtract(Z3,Y)) < .5
+        #correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
+        #correct_prediction = tf.equal(predict_op, Y)
 
         # Calculate accuracy on the test set
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
@@ -191,8 +195,8 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
 
 def main():
     #X_train, Y_train, X_test, Y_test = loadData()
-    X_train, YF_train, YE_train, X_test, YF_test, YE_test = loadData()
-    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, X_test, YF_test, learning_rate = 0.009,
-              num_epochs = 30, minibatch_size = 1, print_cost = True)
+    X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
+    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, X_test, YF_test, filenames, learning_rate = 0.009,
+              num_epochs = 5, minibatch_size = 64, print_cost = True)
 
 main()
