@@ -28,7 +28,7 @@ with rasterio.open('example-total.tif', 'w', **meta) as dst:
     # np_band = np.zeros_like(band)
     # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(np_band)
-    dst.write_band(i + 1, band)
+    # dst.write_band(i + 1, band)
   # for i, band in enumerate(data):
   #   print(i)
   #   print(band)
