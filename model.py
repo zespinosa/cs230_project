@@ -71,7 +71,7 @@ def forward_propagation(X, parameters):
     P2 = tf.contrib.layers.flatten(P2)
     # FULLY-CONNECTED without non-linear activation function (not not call softmax).
     # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=tf.nn.relu)
+    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=None)
     return Z3
 
 def compute_cost(Z3, Y):
@@ -96,6 +96,7 @@ def random_mini_batches(X_train, Y_train, minibatch_size, seed):
         minibatches.append((minibatch_X,minibatch_Y))
         counter -= minibatch_size
         start += minibatch_size
+        print(Y_train)
     if counter > 0:
         minibatch_X = X_train[start:X_train.shape[0],:,:,:]
         minibatch_Y = Y_train[start:Y_train.shape[0],:]
@@ -147,27 +148,27 @@ def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
     # Start the session to compute the tensorflow graph
     with tf.Session() as sess:
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-        total_cost = 0
+
         # Run the initialization
         sess.run(init)
 
         # Do the training loop
         for epoch in range(num_epochs):
-            minibatch_cost = 0.
+            epoch_cost = 0.
             num_minibatches = int(m / minibatch_size)
             seed = seed + 1
             minibatches = random_mini_batches(X_train, Y_train, minibatch_size, seed)
 
             for minibatch in minibatches:
                 (minibatch_X, minibatch_Y) = minibatch
-                _ , temp_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
-                minibatch_cost += temp_cost / num_minibatches
+                _ , minibatch_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
+                epoch_cost += minibatch_cost / num_minibatches
 
             # Print the cost every epoch
             if print_cost == True and epoch % 5 == 0:
-                print ("Cost after epoch %i: %f" % (epoch, temp_cost))
+                print ("Cost after epoch %i: %f" % (epoch, epoch_cost))
             if print_cost == True and epoch % 1 == 0:
-                costs.append(temp_cost)
+                costs.append(epoch_cost)
 
         # plot the cost
         plt.plot(np.squeeze(costs))
@@ -177,8 +178,6 @@ def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
         plt.show()
 
         # Calculate the correct predictions
-        #predict_op = tf.argmax(Z3, 1)
-        #predict_op = Z3
         correct_prediction = tf.abs(tf.subtract(Z3,Y)) < .3
         #correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
         #correct_prediction = tf.equal(predict_op, Y)
@@ -197,6 +196,6 @@ def main():
     #X_train, Y_train, X_test, Y_test = loadData()
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
     train_accuracy, test_accuracy, parameters = model(X_train, YF_train, X_test, YF_test, filenames, learning_rate = 0.009,
-              num_epochs = 20, minibatch_size = 64, print_cost = True)
+              num_epochs = 20, minibatch_size = 1, print_cost = True)
 
 main()
