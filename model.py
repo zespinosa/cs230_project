@@ -8,44 +8,8 @@ from scipy import ndimage
 import tensorflow as tf
 from tensorflow.python.framework import ops
 import os
-
-def importImages(directory):
-    imgs = []
-    os.chdir("./"+ directory)
-    for filename in os.listdir("."):
-        if filename.endswith(".png"):
-            img = scipy.ndimage.imread(filename)
-            img = img[:,0:703, :]
-            imgs.append(img)
-    return np.stack(imgs, axis=0)
-
-def processImages(directory, ones):
-    dataX = importImages(directory)
-    if ones: dataY = np.ones((dataX.shape[0],1))
-    else: dataY = np.zeros((dataX.shape[0],1))
-    os.chdir("..")
-    return dataX, dataY
-
-def concatData(data1, data2):
-    return np.concatenate((data1, data2), axis=0)
-
-def loadData():
-    # Import Training Data #
-    floatX, floatY = processImages("floating/", True)
-    nfloatX, nfloatY = processImages("nofloating/", False)
-    X_train = concatData(floatX, nfloatX)
-    Y_train = concatData(floatY, nfloatY)
-
-    # Import Test Data #
-    X_test = X_train[30:34,:,:,:] # Change so not hard coded
-    Y_test = Y_train[30:34,:] # Change so not hard coded
-    X_train = X_train[0:30,:,:,:]
-    Y_train = Y_train[0:30,:]
-
-    # Normalize
-    X_train = X_train/255.
-    X_test = X_test/255.
-    return X_train, Y_train, X_test, Y_test
+from  import_tiff import loadData
+#from  import_png import loadData
 
 def create_placeholders(n_H0, n_W0, n_C0, n_y):
     """
@@ -65,12 +29,12 @@ def create_placeholders(n_H0, n_W0, n_C0, n_y):
 def initialize_parameters():
     """
     Initializes weight parameters to build a neural network with tensorflow. The shapes are:
-                        W1 : [4, 4, 4, 8]
+                        W1 : [4, 4, 3, 8]
                         W2 : [2, 2, 8, 16]
     Returns:
     parameters -- a dictionary of tensors containing W1, W2
     """
-    W1 = tf.get_variable("W1", [4,4,4,8], initializer=tf.contrib.layers.xavier_initializer(seed=0))
+    W1 = tf.get_variable("W1", [4,4,3,8], initializer=tf.contrib.layers.xavier_initializer(seed=0))
     W2 = tf.get_variable("W2", [2,2,8,16], initializer=tf.contrib.layers.xavier_initializer(seed=0))
     parameters = {"W1": W1,
                   "W2": W2}
@@ -122,7 +86,24 @@ def compute_cost(Z3, Y):
     cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z3, labels = Y))
     return cost
 
-def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
+def random_mini_batches(X_train, Y_train, minibatch_size, seed):
+    minibatches = []
+    counter = X_train.shape[0]
+    start = 0
+    while counter >= minibatch_size:
+        minibatch_X = X_train[start:start+minibatch_size,:,:,:]
+        minibatch_Y = Y_train[start:start+minibatch_size,:]
+        minibatches.append((minibatch_X,minibatch_Y))
+        counter -= minibatch_size
+        start += minibatch_size
+    if counter > 0:
+        minibatch_X = X_train[start:X_train.shape[0],:,:,:]
+        minibatch_Y = Y_train[start:Y_train.shape[0],:]
+        minibatches.append((minibatch_X,minibatch_Y))
+    return minibatches
+
+
+def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
@@ -165,16 +146,23 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
     init = tf.global_variables_initializer()
     # Start the session to compute the tensorflow graph
     with tf.Session() as sess:
+        #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         total_cost = 0
         # Run the initialization
         sess.run(init)
 
         # Do the training loop
         for epoch in range(num_epochs):
+            minibatch_cost = 0.
+            num_minibatches = int(m / minibatch_size)
             seed = seed + 1
-            _ , temp_cost = sess.run([optimizer, cost], feed_dict={X: X_train, Y: Y_train})
+            minibatches = random_mini_batches(X_train, Y_train, minibatch_size, seed)
 
-            total_cost += temp_cost
+            for minibatch in minibatches:
+                (minibatch_X, minibatch_Y) = minibatch
+                _ , temp_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, Y: minibatch_Y})
+                minibatch_cost += temp_cost / num_minibatches
+
             # Print the cost every epoch
             if print_cost == True and epoch % 5 == 0:
                 print ("Cost after epoch %i: %f" % (epoch, temp_cost))
@@ -189,8 +177,11 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
         plt.show()
 
         # Calculate the correct predictions
-        predict_op = tf.argmax(Z3, 1)
-        correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
+        #predict_op = tf.argmax(Z3, 1)
+        #predict_op = Z3
+        correct_prediction = tf.abs(tf.subtract(Z3,Y)) < .5
+        #correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
+        #correct_prediction = tf.equal(predict_op, Y)
 
         # Calculate accuracy on the test set
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
@@ -203,8 +194,9 @@ def model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
         return train_accuracy, test_accuracy, parameters
 
 def main():
-    X_train, Y_train, X_test, Y_test = loadData()
-    train_accuracy, test_accuracy, parameters = model(X_train, Y_train, X_test, Y_test, learning_rate = 0.009,
-              num_epochs = 30, minibatch_size = 1, print_cost = True)
+    #X_train, Y_train, X_test, Y_test = loadData()
+    X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
+    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, X_test, YF_test, filenames, learning_rate = 0.009,
+              num_epochs = 5, minibatch_size = 64, print_cost = True)
 
-#main()
+main()
