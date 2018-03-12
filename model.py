@@ -71,7 +71,7 @@ def forward_propagation(X, parameters):
     P2 = tf.contrib.layers.flatten(P2)
     # FULLY-CONNECTED without non-linear activation function (not not call softmax).
     # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=None)
+    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=tf.nn.relu)
     return Z3
 
 def compute_cost(Z3, Y):
@@ -179,7 +179,7 @@ def model(X_train, Y_train, X_test, Y_test, filenames, learning_rate = 0.009,
         # Calculate the correct predictions
         #predict_op = tf.argmax(Z3, 1)
         #predict_op = Z3
-        correct_prediction = tf.abs(tf.subtract(Z3,Y)) < .5
+        correct_prediction = tf.abs(tf.subtract(Z3,Y)) < .3
         #correct_prediction = tf.equal(predict_op, tf.argmax(Y, 1))
         #correct_prediction = tf.equal(predict_op, Y)
 
@@ -197,6 +197,6 @@ def main():
     #X_train, Y_train, X_test, Y_test = loadData()
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
     train_accuracy, test_accuracy, parameters = model(X_train, YF_train, X_test, YF_test, filenames, learning_rate = 0.009,
-              num_epochs = 5, minibatch_size = 64, print_cost = True)
+              num_epochs = 20, minibatch_size = 64, print_cost = True)
 
 main()
