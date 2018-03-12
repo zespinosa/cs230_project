@@ -19,6 +19,31 @@ import rasterio
 # 5. Figure out how to build Heat Maps
 
 # At each stage of improvement we should record our previous results
-# in order to document progress. This will help with final paper
+# in order to document progress. This will help with final paper.
+
+#Augments data by flipping image up/down, flipping image left/right, rotating 90 degrees once, and rotating 90 degrees twice.
 def augmentData(X,YF,YE):
+    num_augments = 4     #the number of augmentations we're doing.
+    F = []
+    for i in range(0, num_augments):
+        for index, image_arr in enumerate(X):
+            if (YF[index] != 1 or YE[index] != 1):      #if associated rank is not 1-1
+                flipped_arr = image_arr
+                if (i == 0): flipped_arr = np.flipud(flipped_arr)
+                elif (i == 1): flipped_arr = np.fliplr(flipped_arr)
+                elif (i == 2): flipped_arr = np.rot90(flipped_arr, k=1, axes=(0,1))
+                elif(i == 3): flipped_arr = np.rot90(flipped_arr, k=3, axes=(0,1))
+
+                F.append(flipped_arr)
+                YF.append(YF[index])
+                YE.append(YE[index])
+
+                # im0 = Image.fromarray(image_arr)
+                # im1 = Image.fromarray(flipped_arr)
+                # im0.save(str(str(i)+'im0'+str(index)+'.tiff'))     #for testing
+                # im1.save(str(str(i)+'im1'+str(index)+'.tiff'))     #for testing
+    #Append all flipped arrays to X
+    for f in F:
+        X.append(f)
+
     return X, YF, YE
