@@ -35,6 +35,8 @@ def shuffleData(X,YF,YE, filenames):
     YF = np.reshape(YF,(YF.shape[0],1))
     YE = np.asarray(YE)
     YE = np.reshape(YE,(YE.shape[0],1))
+    YF = convert_to_one_hot(YF,9).T
+    YE = convert_to_one_hot(YE,9).T
     return np.stack(X, axis=0), YF, YE, filenames
 
 # Read raster bands directly to Numpy arrays.
@@ -57,10 +59,11 @@ def tiffToArray():
             YE.append(float(labels[1])/10)
 
             # Create X_instance from Tiff
+            np.reshape(r, (150,150,1))
             np.reshape(g, (150,150,1))
             np.reshape(b, (150,150,1))
             np.reshape(a, (150,150,1))
-            X_instance = np.dstack((g,b,a))
+            X_instance = np.dstack((r,g,b,a))
             X.append(X_instance)
     return X, YF, YE, filenames
 
