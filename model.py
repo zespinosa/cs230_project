@@ -51,6 +51,9 @@ def initialize_parameters():
     return parameters
 
 def floatCNN(X, parameters):
+    #P2 = tf.contrib.layers.flatten(X)
+    #Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
+    #return Z3
     W3 = parameters['W3']
     W4 = parameters['W4']
     # CONV2D: stride of 1, padding 'SAME'
@@ -68,11 +71,14 @@ def floatCNN(X, parameters):
     P2 = tf.contrib.layers.flatten(P2_0)
     # FULLY-CONNECTED without non-linear activation function (not not call softmax).
     # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=None)
+    Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
 
     return Z3
 
 def emergentCNN(X, parameters):
+    #P2 = tf.contrib.layers.flatten(X)
+    #Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
+    #return Z3
     W5 = parameters['W5']
     W6 = parameters['W6']
 
@@ -92,7 +98,7 @@ def emergentCNN(X, parameters):
     P2 = tf.contrib.layers.flatten(P2_0)
     # FULLY-CONNECTED without non-linear activation function (not not call softmax).
     # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 1, activation_fn=None)
+    Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
 
     return Z3
 
@@ -151,7 +157,7 @@ def random_mini_batches(X_train, YF_train, YE_train, minibatch_size, seed):
         minibatch_X = X_train[start:start+minibatch_size,:,:,:]
         minibatch_YF = YF_train[start:start+minibatch_size,:]
         minibatch_YE = YE_train[start:start+minibatch_size,:]
-        minibatches.append((minibatch_X,minibatch_Y, minibatch_YE))
+        minibatches.append((minibatch_X,minibatch_YF, minibatch_YE))
         counter -= minibatch_size
         start += minibatch_size
     if counter > 0:
@@ -235,8 +241,10 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
         plt.show()
 
         # Calculate the correct predictions
-        correct_predictionF = tf.abs(tf.subtract(Z3_F,YF)) < .3
-        correct_predictionE = tf.abs(tf.subtract(Z3_E,YE)) < .3
+        predict_F = tf.argmax(Z3_F, 1)
+        predict_E = tf.argmax(Z3_E, 1)
+        correct_predictionF = tf.abs(tf.subtract(predict_F, tf.argmax(YF, 1))) <= 3
+        correct_predictionE = tf.abs(tf.subtract(predict_E, tf.argmax(YE, 1))) <= 3
 
         # Calculate accuracy on the test set
         accuracyF = tf.reduce_mean(tf.cast(correct_predictionF, "float"))

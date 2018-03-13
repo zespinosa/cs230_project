@@ -9,6 +9,8 @@ import os
 import rasterio
 from augment_data import augmentData
 import random
+import tensorflow as tf
+from keras.utils.np_utils import to_categorical
 
 # Splits Image Set into a Train and Test set
 # Test set in 5% of full Image set
@@ -35,8 +37,8 @@ def shuffleData(X,YF,YE, filenames):
     YF = np.reshape(YF,(YF.shape[0],1))
     YE = np.asarray(YE)
     YE = np.reshape(YE,(YE.shape[0],1))
-    YF = convert_to_one_hot(YF,9).T
-    YE = convert_to_one_hot(YE,9).T
+    YF = to_categorical(YF,num_classes=9)
+    YE = to_categorical(YE,num_classes=9)
     return np.stack(X, axis=0), YF, YE, filenames
 
 # Read raster bands directly to Numpy arrays.
@@ -55,8 +57,8 @@ def tiffToArray():
             if int(labels[0]) <= 0 and int(labels[1]) <= 0: continue
             r, g, b, a = src.read()
             if g.shape != (150,150): continue
-            YF.append(float(labels[0])/10)
-            YE.append(float(labels[1])/10)
+            YF.append(int(labels[0])-1)
+            YE.append(int(labels[1])-1)
 
             # Create X_instance from Tiff
             np.reshape(r, (150,150,1))
