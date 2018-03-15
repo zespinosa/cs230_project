@@ -66,6 +66,15 @@ def tiffToArray():
             np.reshape(b, (150,150,1))
             np.reshape(a, (150,150,1))
             X_instance = np.dstack((r,g,b,a))
+            # print('red')
+            # print(r)
+            # print('green')
+            # print(g)
+            # print('blue')
+            # print(b)
+            # print('alpha')
+            # print(a)
+            # exit(0)
             X.append(X_instance)
     return X, YF, YE, filenames
 

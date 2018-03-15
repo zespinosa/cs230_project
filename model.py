@@ -86,6 +86,7 @@ def emergentCNN(X, parameters):
     Z1 = tf.nn.conv2d(X,W5, strides = [1,1,1,1], padding = 'SAME')
     # RELU
     A1 = tf.nn.relu(Z1)
+
     # MAXPOOL: window 8x8, sride 8, padding 'SAME'
     P1 = tf.nn.max_pool(A1, ksize = [1,8,8,1], strides = [1,8,8,1], padding = 'SAME')
     # CONV2D: filters W2, stride 1, padding 'SAME'
@@ -93,9 +94,13 @@ def emergentCNN(X, parameters):
     # RELU
     A2 = tf.nn.relu(Z2)
     # MAXPOOL: window 4x4, stride 4, padding 'SAME'
+    print(A2)
     P2_0 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,4,4,1], padding = 'SAME')
-
+    print(P2_0)
+    
     P2 = tf.contrib.layers.flatten(P2_0)
+    print(P2)
+    exit(0)
     # FULLY-CONNECTED without non-linear activation function (not not call softmax).
     # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
     Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
@@ -127,14 +132,17 @@ def forward_propagation(X, parameters):
     Z2 = tf.nn.conv2d(P1,W2, strides = [1,1,1,1], padding = 'SAME')
     # RELU
     A2_0 = tf.nn.relu(Z2)
-    A2_1 = A2_0
+    P2 = tf.contrib.layers.flatten(A2_0)
+    Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=tf.nn.relu)
+    #A2_1 = A2_0
     # MAXPOOL: window 4x4, stride 4, padding 'SAME'
     #P2_0 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,4,4,1], padding = 'SAME')
     #P2_1 = P2_0
 
-    Z3_0 = floatCNN(A2_0, parameters)
-    Z3_1 = emergentCNN(A2_1, parameters)
-    return Z3_1, Z3_0,
+    # Z3_0 = floatCNN(A2_0, parameters)
+    # Z3_1 = emergentCNN(A2_1, parameters)
+    # return Z3_1, Z3_0
+    return Z3, Z3
 
 def compute_cost(Z3, Y):
     """
@@ -146,6 +154,7 @@ def compute_cost(Z3, Y):
     cost - Tensor of the cost function
     """
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y))
+    print(cost.shape)
     #cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z3, labels = Y))
     return cost
 
@@ -162,17 +171,18 @@ def random_mini_batches(X_train, YF_train, YE_train, minibatch_size, seed):
         start += minibatch_size
     if counter > 0:
         minibatch_X = X_train[start:X_train.shape[0],:,:,:]
-        minibatch_YF = YF_train[start:Y_train.shape[0],:]
+        minibatch_YF = YF_train[start:YF_train.shape[0],:]
         minibatch_YE = YE_train[start:start+minibatch_size,:]
         minibatches.append((minibatch_X,minibatch_YF, minibatch_YE))
     return minibatches
 
 
-def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, learning_rate = 0.009,
+def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.0001,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
     CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> FULLYCONNECTED
+
     Arguments:
     X_train -- training set, of shape (None, 64, 64, 3)
     Y_train -- test set, of shape (None, n_y = 6)
@@ -182,6 +192,7 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
     num_epochs -- number of epochs of the optimization loop
     minibatch_size -- size of a minibatch
     print_cost -- True to print the cost every 100 epochs
+    
     Returns:
     train_accuracy -- real number, accuracy on the train set (X_train)
     test_accuracy -- real number, testing accuracy on the test set (X_test)
@@ -196,13 +207,40 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
     costs = []                                        # To keep track of the cost
 
     # Create Placeholders of the correct shape
-    X, YF, YE = create_placeholders(n_H0, n_W0, n_C0,n_y)
+    inputs, YF, YE = create_placeholders(n_H0, n_W0, n_C0,n_y)
     # Initialize parameters
     parameters = initialize_parameters()
     # Forward propagation: Build the forward propagation in the tensorflow graph
-    Z3_F, Z3_E = forward_propagation(X, parameters)
+    #Z3_F, Z3_E = forward_propagation(X, parameters)
+
+    X = tf.layers.conv2d(inputs, 16, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    X = tf.nn.max_pool(X, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID') 
+    X = tf.layers.conv2d(X, 32, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    X = tf.nn.max_pool(X, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    X = tf.layers.conv2d(X, 64, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    X = tf.nn.max_pool(X, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    test = X    
+    X = tf.layers.conv2d(X, 64, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    X = tf.nn.max_pool(X, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    X = tf.layers.flatten(X)
+    X1 = X
+    X1 = tf.layers.dense(X1,256, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    #test = X1
+    X1 = tf.layers.dense(X1,9, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
+
+    X = tf.layers.dense(X,256, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    X = tf.layers.dense(X,9, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
+
+    Z3_F = X
+    Z3_E = X1
+    #Z3 = forward_propagation(X, parameters)
+
     # Cost function: Add cost function to tensorflow graph
     cost = compute_cost(Z3_F, YF) + compute_cost(Z3_E, YE)
+
+    # cost = compute_cost(Z3, YF)
+    #cost = compute_cost(Z3, )
+
     # Backpropagation: Define the tensorflow optimizer. Use an AdamOptimizer that minimizes the cost.
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
     # Initialize all the variables globally
@@ -222,15 +260,32 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
 
             for minibatch in minibatches:
                 (minibatch_X, minibatch_YF, minibatch_YE) = minibatch
-                _ , minibatch_cost = sess.run([optimizer, cost], feed_dict={X: minibatch_X, YF: minibatch_YF, YE: minibatch_YE})
+                d = np.array(minibatch_X, dtype = np.float32)
+                #print(d.shape)
+                d = d - 127.5
+                d /= 127.5
+                #print(d)
+                #exit(0)
+                #print(d)
+                #exit(0)
+                #minibatch_X /= 255.
+                # _ , minibatch_cost, predictions = sess.run([optimizer, cost, Z3_F], feed_dict={X: minibatch_X, YF: minibatch_YF, YE: minibatch_YE})
+                _ , minibatch_cost, predictions = sess.run([optimizer, cost, Z3_F], feed_dict={inputs: d, YF: minibatch_YF, YE: minibatch_YE})
+                #print('cost:')
+                #print(minibatch_cost)
+                #print('predictions:')
+                #print(predictions)
+                #print('labels:')
+                #print(minibatch_YF)
                 epoch_cost += minibatch_cost / num_minibatches
 
             # Print the cost every epoch
-            if print_cost == True and epoch % 5 == 0:
+            if print_cost == True and epoch % 1 == 0:
                 print ("Cost after epoch %i: %f" % (epoch, epoch_cost))
             if print_cost == True and epoch % 1 == 0:
                 costs.append(epoch_cost)
 
+        # exit(0)
         # plot the cost
         plt.plot(np.squeeze(costs))
         plt.ylabel('cost')
@@ -240,6 +295,13 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
 
         # Calculate the correct predictions
         predict_F = tf.argmax(Z3_F, 1)
+        print('floating predictions:')
+        # for i in range(YF_test.shape[0]):
+        #     print('prediction:')
+        #     print(predict_F[i])
+        #     print('label:')
+        #     print(YF_test[i])
+
         predict_E = tf.argmax(Z3_E, 1)
         correct_predictionF = tf.abs(tf.subtract(predict_F, tf.argmax(YF, 1))) <= 3
         correct_predictionE = tf.abs(tf.subtract(predict_E, tf.argmax(YE, 1))) <= 3
@@ -260,9 +322,9 @@ def model(X_train, YF_train, YE_train, X_test, YF_test ,YE_test, filenames, lear
         return train_accuracyYF, test_accuracyYE, parameters
 
 def main():
-    #X_train, Y_train, X_test, Y_test = loadData()
+    # X_train, Y_train, X_test, Y_test = loadData()
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
-    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.009,
-              num_epochs = 20, minibatch_size = 1, print_cost = True)
+    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.001,
+              num_epochs = 10, minibatch_size = 16, print_cost = True)
 
 main()
