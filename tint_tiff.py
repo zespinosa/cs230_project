@@ -1,5 +1,6 @@
 import rasterio
 import sys
+import numpy as np
 
 in_directory = './labeled/'
 out_directory = './tinted/'
@@ -11,7 +12,7 @@ def tint_tiff(X, g_delta, b_delta):
       r, g, b, a = tif.read()
       meta = tif.meta
 
-    with rasterio.open(out_directory + filename + '-tint.tif', 'w', **meta) as dst:
+    with rasterio.open(out_directory + filename + '-both.tif', 'w', **meta) as dst:
       if g_delta == 1 and b_delta == 1:
         return
 
@@ -19,14 +20,13 @@ def tint_tiff(X, g_delta, b_delta):
       g //= 9
       b //= 9
 
-      r *= (9 - g_delta)
-      r *= (9 - b_delta)
       g *= g_delta
       b *= b_delta
 
-      # r *= (9 - b_delta)
-      # g *= (9 - b_delta) 
-      # b *= b_delta
+      # minVal = int(min(256 - np.average(r), 256 - np.average(g), 256 - np.average(b)) / 3)
+      # r += minVal
+      # g += minVal
+      # b += minVal
 
       dst.write_band(1, r)
       dst.write_band(2, g)
@@ -60,7 +60,7 @@ test_X = [
 ]
 
 
-tint_tiff(test_X, 4, 1)
+tint_tiff(test_X, 1, 10)
 
 
   
