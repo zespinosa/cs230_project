@@ -26,85 +26,57 @@ def create_placeholders(n_H0, n_W0, n_C0, n_y):
     YE = tf.placeholder(shape=(None, n_y), dtype= tf.float32, name="YE")
     return X, YF, YE
 
-def initialize_parameters():
+def forward_propagation_expanded(X, parameters):
     """
-    Initializes weight parameters to build a neural network with tensorflow. The shapes are:
-                        W1 : [4, 4, 3, 8]
-                        W2 : [2, 2, 8, 16]
+    Implements the forward propagation for the model:
+    CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> FULLYCONNECTED
+    Arguments:
+    X -- input dataset placeholder, of shape (input size, number of examples)
+    parameters -- python dictionary containing your parameters "W1", "W2"
+                  the shapes are given in initialize_parameters
     Returns:
-    parameters -- a dictionary of tensors containing W1, W2, W3, W4, W5, W6
+    Z6_F, Z6_E  -- the output of the last LINEAR unit
     """
-    # CNN Floating and Emergent
-    W1 = tf.get_variable("W1", [8,8,4,8], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-    W2 = tf.get_variable("W2", [4,4,8,16], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-
-    # CNN Floating
-    W3 = tf.get_variable("W3", [4,4,16,32], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-    W4 = tf.get_variable("W4", [2,2,32,64], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-
-    # CNN Emergent
-    W5 = tf.get_variable("W5", [4,4,16,32], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-    W6 = tf.get_variable("W6", [2,2,32,64], initializer=tf.contrib.layers.xavier_initializer(seed=0))
-
-    parameters = {"W1": W1, "W2": W2, "W3": W3, "W4": W4, "W5": W5, "W6": W6}
-    return parameters
-
-def floatCNN(X, parameters):
-    #P2 = tf.contrib.layers.flatten(X)
-    #Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
-    #return Z3
+    # Retrieve the parameters from the dictionary "parameters"
+    W1 = parameters['W1']
+    W2 = parameters['W2']
     W3 = parameters['W3']
     W4 = parameters['W4']
-    # CONV2D: stride of 1, padding 'SAME'
-    Z1 = tf.nn.conv2d(X,W3, strides = [1,1,1,1], padding = 'SAME')
-    # RELU
-    A1 = tf.nn.relu(Z1)
-    # MAXPOOL: window 8x8, sride 8, padding 'SAME'
-    P1 = tf.nn.max_pool(A1, ksize = [1,8,8,1], strides = [1,8,8,1], padding = 'SAME')
-    # CONV2D: filters W2, stride 1, padding 'SAME'
-    Z2 = tf.nn.conv2d(P1,W4, strides = [1,1,1,1], padding = 'SAME')
-    # RELU
-    A2 = tf.nn.relu(Z2)
-    # MAXPOOL: window 4x4, stride 4, padding 'SAME'
-    P2_0 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,4,4,1], padding = 'SAME')
-    P2 = tf.contrib.layers.flatten(P2_0)
-    # FULLY-CONNECTED without non-linear activation function (not not call softmax).
-    # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
-
-    return Z3
-
-def emergentCNN(X, parameters):
-    #P2 = tf.contrib.layers.flatten(X)
-    #Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
-    #return Z3
     W5 = parameters['W5']
     W6 = parameters['W6']
+    W7 = parameters['W7']
+    W8 = parameters['W8']
 
-    # CONV2D: stride of 1, padding 'SAME'
-    Z1 = tf.nn.conv2d(X,W5, strides = [1,1,1,1], padding = 'SAME')
-    # RELU
-    A1 = tf.nn.relu(Z1)
+    A1 = tf.layers.conv2d(X, W1, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    A2 = tf.layers.conv2d(A1, W2, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    A3 = tf.layers.conv2d(A2, W3, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z4 = tf.nn.max_pool(A3, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    A4 = tf.layers.conv2d(Z4, W4, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z5 = tf.nn.max_pool(A4, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
 
-    # MAXPOOL: window 8x8, sride 8, padding 'SAME'
-    P1 = tf.nn.max_pool(A1, ksize = [1,8,8,1], strides = [1,8,8,1], padding = 'SAME')
-    # CONV2D: filters W2, stride 1, padding 'SAME'
-    Z2 = tf.nn.conv2d(P1,W6, strides = [1,1,1,1], padding = 'SAME')
-    # RELU
-    A2 = tf.nn.relu(Z2)
-    # MAXPOOL: window 4x4, stride 4, padding 'SAME'
-    print(A2)
-    P2_0 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,4,4,1], padding = 'SAME')
-    print(P2_0)
+    # Branch into floating and emergent paths
+    Z5_F = Z5
+    Z5_E = Z5
 
-    P2 = tf.contrib.layers.flatten(P2_0)
-    print(P2)
-    exit(0)
-    # FULLY-CONNECTED without non-linear activation function (not not call softmax).
-    # 6 neurons in output layer. Hint: one of the arguments should be "activation_fn=None"
-    Z3 = tf.contrib.layers.fully_connected(P2, 9, activation_fn=None)
+    # CNN Branching
+    # Floating
+    A6 = tf.layers.conv2d(Z5_F, W5, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z6 = tf.nn.max_pool(A6, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    A7 = tf.layers.conv2d(Z6, W6, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z7 = tf.nn.max_pool(A7, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    Z7 = tf.contrib.layers.flatten(Z7)
+    A8_F = tf.layers.dense(Z7, W7, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z8_F = tf.layers.dense(A8_F, W8, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    # Emergent
+    A6 = tf.layers.conv2d(Z5_E, W5, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z6 = tf.nn.max_pool(A6, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    A7 = tf.layers.conv2d(Z6, W6, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z7 = tf.nn.max_pool(A7, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
+    Z7 = tf.contrib.layers.flatten(Z7)
+    A8_E = tf.layers.dense(Z7, W7, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    Z8_E = tf.layers.dense(A8_E, W8, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
 
-    return Z3
+    return Z8_F, Z8_E
 
 def forward_propagation(X, parameters):
     """
@@ -146,7 +118,6 @@ def forward_propagation(X, parameters):
     # Branch for emergent -> tanh -> FC
     A5_E = tf.layers.dense(Z5_E, W5, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
     Z6_E = tf.layers.dense(A5_E, W6, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
-
     return Z6_F, Z6_E
 
 def compute_cost(Z3, Y):
@@ -159,8 +130,8 @@ def compute_cost(Z3, Y):
     cost - Tensor of the cost function
     """
 
-    rank_1_weight = 5.0   # PARAMETER WE CHOOSE: try different values!
-    class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
+    rank_1_weight = 1.5   # PARAMETER WE CHOOSE: try different values!
+    class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1, 1.3, 1.5]])
     weights = tf.reduce_sum(class_weights * Y, axis=1)
     unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y)
     weighted_losses = unweighted_losses * weights
@@ -188,7 +159,20 @@ def random_mini_batches(X_train, YF_train, YE_train, minibatch_size, seed):
     return minibatches
 
 
-def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.0001,
+def composite_cost(predict, Y_labels):
+    # Seperate Ones
+    where_ones = tf.equal(Y_labels, 0)
+    indices_ones = tf.where(where_ones)
+    predict_ones = tf.gather(predict, indices_ones)
+    Y_labels_ones = tf.boolean_mask(Y_labels, where_ones)
+    # Seperate NonOnes
+    where = tf.not_equal(Y_labels, 0)
+    indices = tf.where(where)
+    predict = tf.gather(predict,indices)
+    Y_labels_others = tf.boolean_mask(Y_labels, where)
+    return predict, Y_labels_others, predict_ones, Y_labels_ones
+
+def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test=False, learning_rate = 0.0001,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
@@ -220,11 +204,10 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
     # Create Placeholders of the correct shape
     X, YF, YE = create_placeholders(n_H0, n_W0, n_C0,n_y)
 
-    # Initialize parameters
-    parameters = initialize_parameters()
-
     # Forward propagation: Build the forward propagation in the tensorflow graph
-    parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 256, "W6": 9 }
+    #parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 128, "W6":128, "W7": 256, "W8": 9}
+    #Z6_F, Z6_E = forward_propagation_expanded(X,parameters)
+    parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 256, "W6": 9}
     Z6_F, Z6_E = forward_propagation(X, parameters)
 
     # Cost function: Add cost function to tensorflow graph
@@ -252,15 +235,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
             for minibatch in minibatches:
                 (minibatch_X, minibatch_YF, minibatch_YE) = minibatch
                 d = np.array(minibatch_X, dtype = np.float32)
-                #print(d.shape)
                 d = d - 127.5
                 d /= 127.5
-                #print(d)
-                #exit(0)
-                #print(d)
-                #exit(0)
-                #minibatch_X /= 255.
-                # _ , minibatch_cost, predictions = sess.run([optimizer, cost, Z3_F], feed_dict={X: minibatch_X, YF: minibatch_YF, YE: minibatch_YE})
                 _ , minibatch_cost, = sess.run([optimizer, cost], feed_dict={X: d, YF: minibatch_YF, YE: minibatch_YE})
                 epoch_cost += minibatch_cost / num_minibatches
 
@@ -277,38 +253,21 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
         plt.title("Learning rate =" + str(learning_rate))
         plt.show()
 
+        if Test: return Z6_F, Z6_E
+
         # Calculate Composite Predictions Floating:
         predict_F = tf.argmax(Z6_F, 1)
         YF_labels = tf.argmax(YF, 1)
-        # Seperate Ones Floating
-        where_ones = tf.equal(YF_labels, 0)
-        indices_ones = tf.where(where_ones)
-        predict_F_ones = tf.gather(predict_F, indices_ones)
-        YF_labels_ones = tf.boolean_mask(YF_labels, where_ones)
-        # Seperate NonOnes Floating
-        where = tf.not_equal(YF_labels, 0)
-        indices = tf.where(where)
-        predict_F = tf.gather(predict_F,indices)
-        YF_labels_others = tf.boolean_mask(YF_labels, where)
+        predict_F, YF_labels_others, predict_F_ones, YE_labels_ones = composite_cost(predict_F, YF_labels)
 
         # Calculate Composite Predictions Emergent:
         predict_E = tf.argmax(Z6_E, 1)
         YE_labels = tf.argmax(YE, 1)
-
-        # Seperate Ones Emergent
-        where_ones = tf.equal(YE_labels, 0)
-        indices_ones = tf.where(where_ones)
-        predict_E_ones = tf.gather(predict_E, indices_ones)
-        YE_labels_ones = tf.boolean_mask(YE_labels, where_ones)
-        # Seperate NonOnes Emergent
-        where = tf.not_equal(YE_labels, 0)
-        indices = tf.where(where)
-        predict_E = tf.gather(predict_E,indices)
-        YE_labels_others = tf.boolean_mask(YE_labels, where)
+        predict_E, YE_labels_others, predict_E_ones ,YE_labels_ones = composite_cost(predict_E, YE_labels)
 
         # NonOnes
-        correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 3
-        correct_predictionE = tf.abs(tf.subtract(predict_E, YE_labels_others)) <= 3
+        correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 4
+        correct_predictionE = tf.abs(tf.subtract(predict_E, YE_labels_others)) <= 4
         # Ones
         correct_predictionF_ones = tf.equal(predict_F_ones, YF_labels_ones)
         correct_predictionE_ones = tf.equal(predict_E_ones, YE_labels_ones)
@@ -339,12 +298,13 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
         print("Train Accuracy Emergent Ones:", train_accuracyYE_ones)
         print("Test Accuracy Emergent Ones:", test_accuracyYE_ones)
 
-        return train_accuracyYF, test_accuracyYE, parameters
+        return None, None
 
 def main():
     # X_train, Y_train, X_test, Y_test = loadData()
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
-    train_accuracy, test_accuracy, parameters = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.001,
-              num_epochs =5, minibatch_size = 16, print_cost = True)
+    Z6_F, Z6_E = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test=False, learning_rate = 0.001,
+              num_epochs =1, minibatch_size = 16, print_cost = True)
+    if False: buildHeatMap(Z6_F, Z6_E)
 
 main()
