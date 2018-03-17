@@ -258,12 +258,12 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
         # Calculate Composite Predictions Floating:
         predict_F = tf.argmax(Z6_F, 1)
         YF_labels = tf.argmax(YF, 1)
-        predict_F, YF_labels_others, predict_F_ones, YE_labels_ones = composite_cost(predict_F, YF_labels)
+        predict_F, YF_labels_others, predict_F_ones, YF_labels_ones = composite_cost(predict_F, YF_labels)
 
         # Calculate Composite Predictions Emergent:
         predict_E = tf.argmax(Z6_E, 1)
         YE_labels = tf.argmax(YE, 1)
-        predict_E, YE_labels_others, predict_E_ones ,YE_labels_ones = composite_cost(predict_E, YE_labels)
+        predict_E, YE_labels_others, predict_E_ones, YE_labels_ones = composite_cost(predict_E, YE_labels)
 
         # NonOnes
         correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 4
