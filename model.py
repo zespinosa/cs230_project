@@ -9,7 +9,6 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 import os
 from  import_tiff import loadData
-#from  import_png import loadData
 
 def create_placeholders(n_H0, n_W0, n_C0, n_y):
     """
@@ -97,7 +96,7 @@ def emergentCNN(X, parameters):
     print(A2)
     P2_0 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,4,4,1], padding = 'SAME')
     print(P2_0)
-    
+
     P2 = tf.contrib.layers.flatten(P2_0)
     print(P2)
     exit(0)
@@ -127,21 +126,21 @@ def forward_propagation(X, parameters):
     W6 = parameters['W6']
 
     A1 = tf.layers.conv2d(X, W1, [3,3], activation=tf.nn.relu, kernel_initializer=tf.contrib.layers.xavier_initializer())
-    Z1 = tf.nn.max_pool(A1, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID') 
+    Z1 = tf.nn.max_pool(A1, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
     A2 = tf.layers.conv2d(Z1, W2, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
     Z2 = tf.nn.max_pool(A2, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
     A3 = tf.layers.conv2d(Z2, W3, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
-    Z4 = tf.nn.max_pool(A3, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')  
+    Z4 = tf.nn.max_pool(A3, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
     A4 = tf.layers.conv2d(Z4, W4, [3,3], activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
     Z5 = tf.nn.max_pool(A4, ksize = [1,4,4,1], strides = [1,2,2,1], padding = 'VALID')
-    Z5 = tf.layers.flatten(Z5)
+    Z5 = tf.contrib.layers.flatten(Z5)
 
     # Branch into floating and emergent paths
     Z5_F = Z5
     Z5_E = Z5
 
-    # Branch for floating -> tanh -> FC 
-    A5_F = tf.layers.dense(Z5_F,W5, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
+    # Branch for floating -> tanh -> FC
+    A5_F = tf.layers.dense(Z5_F, W5, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
     Z6_F = tf.layers.dense(A5_F, W6, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
 
     # Branch for emergent -> tanh -> FC
@@ -160,7 +159,7 @@ def compute_cost(Z3, Y):
     cost - Tensor of the cost function
     """
 
-    rank_1_weight = 100.0   # PARAMETER WE CHOOSE: try different values!
+    rank_1_weight = 5.0   # PARAMETER WE CHOOSE: try different values!
     class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
     weights = tf.reduce_sum(class_weights * Y, axis=1)
     unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y)
@@ -204,7 +203,7 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
     num_epochs -- number of epochs of the optimization loop
     minibatch_size -- size of a minibatch
     print_cost -- True to print the cost every 100 epochs
-    
+
     Returns:
     train_accuracy -- real number, accuracy on the train set (X_train)
     test_accuracy -- real number, testing accuracy on the test set (X_test)
@@ -278,26 +277,67 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, lear
         plt.title("Learning rate =" + str(learning_rate))
         plt.show()
 
-        # Calculate the correct predictions
+        # Calculate Composite Predictions Floating:
         predict_F = tf.argmax(Z6_F, 1)
-        predict_E = tf.argmax(Z6_E, 1)
-        correct_predictionF = tf.abs(tf.subtract(predict_F, tf.argmax(YF, 1))) <= 3
-        correct_predictionE = tf.abs(tf.subtract(predict_E, tf.argmax(YE, 1))) <= 3
+        YF_labels = tf.argmax(YF, 1)
+        # Seperate Ones Floating
+        where_ones = tf.equal(YF_labels, 0)
+        indices_ones = tf.where(where_ones)
+        predict_F_ones = tf.gather(predict_F, indices_ones)
+        YF_labels_ones = tf.boolean_mask(YF_labels, where_ones)
+        # Seperate NonOnes Floating
+        where = tf.not_equal(YF_labels, 0)
+        indices = tf.where(where)
+        predict_F = tf.gather(predict_F,indices)
+        YF_labels_others = tf.boolean_mask(YF_labels, where)
 
-        # Calculate accuracy on the test set
+        # Calculate Composite Predictions Emergent:
+        predict_E = tf.argmax(Z6_E, 1)
+        YE_labels = tf.argmax(YE, 1)
+
+        # Seperate Ones Emergent
+        where_ones = tf.equal(YE_labels, 0)
+        indices_ones = tf.where(where_ones)
+        predict_E_ones = tf.gather(predict_E, indices_ones)
+        YE_labels_ones = tf.boolean_mask(YE_labels, where_ones)
+        # Seperate NonOnes Emergent
+        where = tf.not_equal(YE_labels, 0)
+        indices = tf.where(where)
+        predict_E = tf.gather(predict_E,indices)
+        YE_labels_others = tf.boolean_mask(YE_labels, where)
+
+        # NonOnes
+        correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 3
+        correct_predictionE = tf.abs(tf.subtract(predict_E, YE_labels_others)) <= 3
+        # Ones
+        correct_predictionF_ones = tf.equal(predict_F_ones, YF_labels_ones)
+        correct_predictionE_ones = tf.equal(predict_E_ones, YE_labels_ones)
+
+        # Calculate accuracy on the test set: NonOnes
         accuracyF = tf.reduce_mean(tf.cast(correct_predictionF, "float"))
         accuracyE = tf.reduce_mean(tf.cast(correct_predictionE, "float"))
-        # print(accuracyF, accuracyE)
-        print(X_train.shape)
-        print(YF_train.shape)
+        # Calculate accuracy on the test set: Ones
+        accuracyF_ones = tf.reduce_mean(tf.cast(correct_predictionF_ones, "float"))
+        accuracyE_ones = tf.reduce_mean(tf.cast(correct_predictionE_ones, "float"))
+
         train_accuracyYF = accuracyF.eval({X: X_train, YF: YF_train})
         test_accuracyYF = accuracyF.eval({X: X_test, YF: YF_test})
+        train_accuracyYF_ones = accuracyF_ones.eval({X: X_train, YF: YF_train})
+        test_accuracyYF_ones = accuracyF_ones.eval({X: X_test, YF: YF_test})
+
         train_accuracyYE = accuracyE.eval({X: X_train, YE: YE_train})
         test_accuracyYE = accuracyE.eval({X: X_test, YE: YE_test})
+        train_accuracyYE_ones = accuracyE_ones.eval({X: X_train, YE: YE_train})
+        test_accuracyYE_ones = accuracyE_ones.eval({X: X_test, YE: YE_test})
+
         print("Train Accuracy Floating:", train_accuracyYF)
         print("Test Accuracy Floating:", test_accuracyYF)
+        print("Train Accuracy Floating Ones:", train_accuracyYF_ones)
+        print("Test Accuracy Floating Ones:", test_accuracyYF_ones)
         print("Train Accuracy Emergent:", train_accuracyYE)
         print("Test Accuracy Emergent:", test_accuracyYE)
+        print("Train Accuracy Emergent Ones:", train_accuracyYE_ones)
+        print("Test Accuracy Emergent Ones:", test_accuracyYE_ones)
 
         return train_accuracyYF, test_accuracyYE, parameters
 
@@ -305,6 +345,6 @@ def main():
     # X_train, Y_train, X_test, Y_test = loadData()
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
     train_accuracy, test_accuracy, parameters = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, learning_rate = 0.001,
-              num_epochs = 2, minibatch_size = 16, print_cost = True)
+              num_epochs =5, minibatch_size = 16, print_cost = True)
 
 main()
