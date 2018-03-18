@@ -26,8 +26,8 @@ def augmentData(X,YF,YE):
     num_augments = 7     #the number of augmentations we're doing.
     F = []
     for index, image_arr in enumerate(X):
-        if (YF[index] != 1 or YE[index] != 1):      #if associated rank is not 1-1
-            for i in range(0, num_augments):
+        if (YF[index] != 0 or YE[index] != 0):      #if associated rank is not 1-1
+            for i in range(num_augments):
                 flipped_arr = image_arr
                 if (i == 0): flipped_arr = np.flipud(flipped_arr)
                 elif (i == 1): flipped_arr = np.fliplr(flipped_arr)

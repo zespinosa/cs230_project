@@ -28,18 +28,18 @@ def splitData(X,YF,YE):
 # Shuffles training data:
 # Necessary for minibatches in future
 # Reduces skew in learning
-def shuffleData(X,YF,YE, filenames):
-    temp = list(zip(X, YF, YE, filenames))
+def shuffleData(X,YF,YE):
+    temp = list(zip(X, YF, YE))
     random.seed(5)
     random.shuffle(temp)
-    X, YF, YE, filenames = zip(*temp)
+    X, YF, YE = zip(*temp)
     YF = np.asarray(YF)
     YF = np.reshape(YF,(YF.shape[0],1))
     YE = np.asarray(YE)
     YE = np.reshape(YE,(YE.shape[0],1))
     YF = to_categorical(YF,num_classes=9)
     YE = to_categorical(YE,num_classes=9)
-    return np.stack(X, axis=0), YF, YE, filenames
+    return np.stack(X, axis=0), YF, YE
 
 # Read raster bands directly to Numpy arrays.
 def tiffToArray(directory):
@@ -53,6 +53,10 @@ def tiffToArray(directory):
     for filename in os.listdir(directory):
         with rasterio.open(directory+ '/' + filename) as src:
             if not generate:
+                r, g, b, a = src.read()
+                if g.shape != (150,150): 
+                    continue
+
                 # Create Y instances from Tiff FileName
                 labels = filename.split("-")
                 if int(labels[0]) > 9 or int(labels[1]) > 9: continue
@@ -60,8 +64,7 @@ def tiffToArray(directory):
                 YF.append(int(labels[0])-1)
                 YE.append(int(labels[1])-1)
 
-            r, g, b, a = src.read()
-            if g.shape != (150,150): continue
+
 
             # Create X_instance from Tiff
             np.reshape(r, (150,150,1))
@@ -88,7 +91,7 @@ def loadData():
     print('YE len:', len(YE))
     print('filenames:', len(filenames))
 
-    X, YF, YE, filenames = shuffleData(X,YF,YE, filenames)
+    X, YF, YE = shuffleData(X,YF,YE)
     print("shuffleData Complete")
     print('X len:', len(X))
     print('YF len:', len(YF))

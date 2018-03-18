@@ -250,8 +250,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
 
         predict_F = tf.argmax(Z6_F, 1)
         predict_E = tf.argmax(Z6_E, 1)
-        if generate:
-            return predict_F, predict_E, X
+        # if generate:
+        #     return predict_F, predict_E, X
 
         # plot the cost
         plt.plot(np.squeeze(costs))
@@ -302,14 +302,14 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
         print("Train Accuracy Emergent Ones:", train_accuracyYE_ones)
         print("Test Accuracy Emergent Ones:", test_accuracyYE_ones)
 
-        return None, None
+        return predict_F, predict_E, X
 
 
 def main(map_directory=False):
     generate = bool(map_directory)
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
     Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.001,
-              num_epochs=20, minibatch_size = 16, print_cost = True)
+              num_epochs=1, minibatch_size = 32, print_cost = True)
     if map_directory:
         filenames, X_map, _, _ = tiffToArray(map_directory) # X is a list
         X_map = np.stack(X_map, axis=0)
