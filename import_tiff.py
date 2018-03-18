@@ -45,7 +45,7 @@ def shuffleData(X,YF,YE, filenames):
 def tiffToArray(directory):
     generate = bool(directory)
     if not generate:
-        directory = './test_data' # Change Directory for local machine
+        directory = './train_data' # Change Directory for local machine
     YF = []      # Floating labels
     YE = []      # Emergent labels
     X = []       # Images
