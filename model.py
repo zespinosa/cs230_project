@@ -1,14 +1,16 @@
+import sys
 import math
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 import scipy
+import os
+import tensorflow as tf
 from PIL import Image
 from scipy import ndimage
-import tensorflow as tf
 from tensorflow.python.framework import ops
-import os
-from  import_tiff import loadData
+from  import_tiff import loadData, tiffToArray
+from create_heatmap import create_heatmap
 
 def create_placeholders(n_H0, n_W0, n_C0, n_y):
     """
@@ -172,7 +174,7 @@ def composite_cost(predict, Y_labels):
     Y_labels_others = tf.boolean_mask(Y_labels, where)
     return predict, Y_labels_others, predict_ones, Y_labels_ones
 
-def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test=False, learning_rate = 0.0001,
+def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.0001,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
@@ -193,7 +195,6 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
     test_accuracy -- real number, testing accuracy on the test set (X_test)
     parameters -- parameters learnt by the model. They can then be used to predict.
     """
-
     ops.reset_default_graph()                         # to be able to rerun the model without overwriting tf variables
     tf.set_random_seed(1)                             # to keep results consistent (tensorflow seed)
     seed = 3                                          # to keep results consistent (numpy seed)
@@ -246,6 +247,12 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
             if print_cost == True and epoch % 1 == 0:
                 costs.append(epoch_cost)
 
+
+        predict_F = tf.argmax(Z6_F, 1)
+        predict_E = tf.argmax(Z6_E, 1)
+        if generate:
+            return predict_F, predict_E, X
+
         # plot the cost
         plt.plot(np.squeeze(costs))
         plt.ylabel('cost')
@@ -253,15 +260,11 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
         plt.title("Learning rate =" + str(learning_rate))
         plt.show()
 
-        if Test: return Z6_F, Z6_E
-
         # Calculate Composite Predictions Floating:
-        predict_F = tf.argmax(Z6_F, 1)
         YF_labels = tf.argmax(YF, 1)
         predict_F, YF_labels_others, predict_F_ones, YF_labels_ones = composite_cost(predict_F, YF_labels)
 
         # Calculate Composite Predictions Emergent:
-        predict_E = tf.argmax(Z6_E, 1)
         YE_labels = tf.argmax(YE, 1)
         predict_E, YE_labels_others, predict_E_ones, YE_labels_ones = composite_cost(predict_E, YE_labels)
 
@@ -279,6 +282,7 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
         accuracyF_ones = tf.reduce_mean(tf.cast(correct_predictionF_ones, "float"))
         accuracyE_ones = tf.reduce_mean(tf.cast(correct_predictionE_ones, "float"))
 
+     
         train_accuracyYF = accuracyF.eval({X: X_train, YF: YF_train})
         test_accuracyYF = accuracyF.eval({X: X_test, YF: YF_test})
         train_accuracyYF_ones = accuracyF_ones.eval({X: X_train, YF: YF_train})
@@ -300,11 +304,30 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test
 
         return None, None
 
-def main():
-    # X_train, Y_train, X_test, Y_test = loadData()
-    X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
-    Z6_F, Z6_E = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, Test=False, learning_rate = 0.001,
-              num_epochs =1, minibatch_size = 16, print_cost = True)
-    if False: buildHeatMap(Z6_F, Z6_E)
 
-main()
+def main(map_directory=False):
+    generate = bool(map_directory)
+    X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
+    Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.001,
+              num_epochs=20, minibatch_size = 16, print_cost = True)
+    if map_directory:
+        filenames, X_map, _, _ = tiffToArray(map_directory) # X is a list
+        X_map = np.stack(X_map, axis=0)
+        (m, n_H0, n_W0, n_C0) = X_map.shape
+        # Initialize all the variables globally
+        init = tf.global_variables_initializer()
+        with tf.Session() as sess:
+            # Run the initialization
+            sess.run(init)
+            predict_F = Z6_F.eval({X: X_map})
+            predict_E = Z6_E.eval({X: X_map})
+            create_heatmap(map_directory, filenames, predict_F, predict_E)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        main()
+    elif len(sys.argv) == 2:
+        map_directory = sys.argv[1]
+        main(map_directory)
+    

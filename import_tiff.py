@@ -42,23 +42,26 @@ def shuffleData(X,YF,YE, filenames):
     return np.stack(X, axis=0), YF, YE, filenames
 
 # Read raster bands directly to Numpy arrays.
-def tiffToArray():
-    directory = './test_data/' # Change Directory for local machine
+def tiffToArray(directory):
+    generate = bool(directory)
+    if not generate:
+        directory = './test_data' # Change Directory for local machine
     YF = []      # Floating labels
     YE = []      # Emergent labels
     X = []       # Images
     filenames = []
     for filename in os.listdir(directory):
-        with rasterio.open(directory+filename) as src:
-            # Create Y instances from Tiff FileName
-            filenames.append(filename)
-            labels = filename.split("-")
-            if int(labels[0]) > 9 or int(labels[1]) > 9: continue
-            if int(labels[0]) <= 0 and int(labels[1]) <= 0: continue
+        with rasterio.open(directory+ '/' + filename) as src:
+            if not generate:
+                # Create Y instances from Tiff FileName
+                labels = filename.split("-")
+                if int(labels[0]) > 9 or int(labels[1]) > 9: continue
+                if int(labels[0]) <= 0 and int(labels[1]) <= 0: continue
+                YF.append(int(labels[0])-1)
+                YE.append(int(labels[1])-1)
+
             r, g, b, a = src.read()
             if g.shape != (150,150): continue
-            YF.append(int(labels[0])-1)
-            YE.append(int(labels[1])-1)
 
             # Create X_instance from Tiff
             np.reshape(r, (150,150,1))
@@ -66,25 +69,36 @@ def tiffToArray():
             np.reshape(b, (150,150,1))
             np.reshape(a, (150,150,1))
             X_instance = np.dstack((r,g,b,a))
-            # print('red')
-            # print(r)
-            # print('green')
-            # print(g)
-            # print('blue')
-            # print(b)
-            # print('alpha')
-            # print(a)
-            # exit(0)
             X.append(X_instance)
-    return X, YF, YE, filenames
+            filenames.append(filename)
+    return filenames, X, YF, YE
 
 def loadData():
-    X, YF, YE, filenames = tiffToArray()
+    filenames, X, YF, YE = tiffToArray(None)
     print("tiffToArray Complete")
+    print('X len:', len(X))
+    print('YF len:', len(YF))
+    print('YE len:', len(YE))
+    print('filenames:', len(filenames))
+
     X, YF, YE = augmentData(X,YF,YE)
     print("augmentData Complete")
+    print('X len:', len(X))
+    print('YF len:', len(YF))
+    print('YE len:', len(YE))
+    print('filenames:', len(filenames))
+
     X, YF, YE, filenames = shuffleData(X,YF,YE, filenames)
     print("shuffleData Complete")
+    print('X len:', len(X))
+    print('YF len:', len(YF))
+    print('YE len:', len(YE))
+    print('filenames:', len(filenames))
+
     X_train, YF_train, YE_train, X_test, YF_test, YE_test = splitData(X,YF,YE)
     print("splitData Complete")
+    print('X_test len:', len(X_test))
+    print('YF_test len:', len(YF_test))
+    print('YE_test len:', len(YE_test))
+    print('filenames:', len(filenames))
     return X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames
