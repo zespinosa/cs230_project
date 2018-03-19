@@ -52,19 +52,17 @@ def tiffToArray(directory):
     filenames = []
     for filename in os.listdir(directory):
         with rasterio.open(directory+ '/' + filename) as src:
+            r, g, b, a = src.read()
+            if g.shape != (150,150): 
+                continue
+                
             if not generate:
-                r, g, b, a = src.read()
-                if g.shape != (150,150): 
-                    continue
-
                 # Create Y instances from Tiff FileName
                 labels = filename.split("-")
                 if int(labels[0]) > 9 or int(labels[1]) > 9: continue
                 if int(labels[0]) <= 0 and int(labels[1]) <= 0: continue
                 YF.append(int(labels[0])-1)
                 YE.append(int(labels[1])-1)
-
-
 
             # Create X_instance from Tiff
             np.reshape(r, (150,150,1))
@@ -99,6 +97,9 @@ def loadData():
     print('filenames:', len(filenames))
 
     X_train, YF_train, YE_train, X_test, YF_test, YE_test = splitData(X,YF,YE)
+    X_train = X_train[0:int(len(X_train)/3),:,:,:]
+    YF_train = YF_train[0:int(len(YF_train)/3),:]
+    YE_train = YE_train[0:int(len(YE_train)/3),:]
     print("splitData Complete")
     print('X_test len:', len(X_test))
     print('YF_test len:', len(YF_test))

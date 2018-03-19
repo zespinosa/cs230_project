@@ -132,8 +132,8 @@ def compute_cost(Z3, Y):
     cost - Tensor of the cost function
     """
 
-    rank_1_weight = 1.5   # PARAMETER WE CHOOSE: try different values!
-    class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1, 1.3, 1.5]])
+    rank_1_weight = 1.0   # PARAMETER WE CHOOSE: try different values!
+    class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
     weights = tf.reduce_sum(class_weights * Y, axis=1)
     unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y)
     weighted_losses = unweighted_losses * weights
@@ -174,7 +174,7 @@ def composite_cost(predict, Y_labels):
     Y_labels_others = tf.boolean_mask(Y_labels, where)
     return predict, Y_labels_others, predict_ones, Y_labels_ones
 
-def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.0001,
+def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.009,
           num_epochs = 30, minibatch_size = 1, print_cost = True):
     """
     Implements a three-layer ConvNet in Tensorflow:
@@ -250,8 +250,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
 
         predict_F = tf.argmax(Z6_F, 1)
         predict_E = tf.argmax(Z6_E, 1)
-        # if generate:
-        #     return predict_F, predict_E, X
+        if generate:
+            return predict_F, predict_E, X
 
         # plot the cost
         plt.plot(np.squeeze(costs))
@@ -308,8 +308,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
 def main(map_directory=False):
     generate = bool(map_directory)
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
-    Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.001,
-              num_epochs=1, minibatch_size = 32, print_cost = True)
+    Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.0001,
+              num_epochs=5, minibatch_size = 16, print_cost = True)
     if map_directory:
         filenames, X_map, _, _ = tiffToArray(map_directory) # X is a list
         X_map = np.stack(X_map, axis=0)
