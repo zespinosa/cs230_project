@@ -37,8 +37,8 @@ def shuffleData(X,YF,YE):
     YF = np.reshape(YF,(YF.shape[0],1))
     YE = np.asarray(YE)
     YE = np.reshape(YE,(YE.shape[0],1))
-    YF = to_categorical(YF,num_classes=9)
-    YE = to_categorical(YE,num_classes=9)
+    YF = to_categorical(YF,num_classes=2)
+    YE = to_categorical(YE,num_classes=2)
     return np.stack(X, axis=0), YF, YE
 
 # Read raster bands directly to Numpy arrays.
@@ -59,10 +59,20 @@ def tiffToArray(directory):
             if not generate:
                 # Create Y instances from Tiff FileName
                 labels = filename.split("-")
-                if int(labels[0]) > 9 or int(labels[1]) > 9: continue
-                if int(labels[0]) <= 0 and int(labels[1]) <= 0: continue
-                YF.append(int(labels[0])-1)
-                YE.append(int(labels[1])-1)
+                if int(labels[0]) > 9 or int(labels[1]) > 9: 
+                    continue
+                if int(labels[0]) <= 0 and int(labels[1]) <= 0:
+                    continue
+                if int(labels[0]) > 3:
+                    YF.append(1)
+                else:
+                    YF.append(0)
+                if int(labels[1]) > 3:
+                    YE.append(1)
+                else:
+                    YE.append(0)
+                # YF.append(int(labels[0])-1)
+                # YE.append(int(labels[1])-1)
 
             # Create X_instance from Tiff
             np.reshape(r, (150,150,1))
@@ -81,6 +91,7 @@ def loadData():
     print('YF len:', len(YF))
     print('YE len:', len(YE))
     print('filenames:', len(filenames))
+    # print('X:', X)
 
     X, YF, YE = augmentData(X,YF,YE)
     print("augmentData Complete")

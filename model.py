@@ -122,7 +122,7 @@ def forward_propagation(X, parameters):
     Z6_E = tf.layers.dense(A5_E, W6, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
     return Z6_F, Z6_E
 
-def compute_cost(Z3, Y):
+def compute_cost(Z, Y):
     """
     Computes the cost
     Arguments:
@@ -132,13 +132,13 @@ def compute_cost(Z3, Y):
     cost - Tensor of the cost function
     """
 
-    rank_1_weight = 1.0   # PARAMETER WE CHOOSE: try different values!
-    class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
-    weights = tf.reduce_sum(class_weights * Y, axis=1)
-    unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y)
-    weighted_losses = unweighted_losses * weights
-    cost = tf.reduce_mean(weighted_losses)
-    #cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z3, labels = Y))
+    # rank_1_weight = 1.0   # PARAMETER WE CHOOSE: try different values!
+    # class_weights = tf.constant([[rank_1_weight, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]])
+    # weights = tf.reduce_sum(class_weights * Y, axis=1)
+    # unweighted_losses = tf.nn.softmax_cross_entropy_with_logits(logits = Z3, labels = Y)
+    # weighted_losses = unweighted_losses * weights
+    # cost = tf.reduce_mean(weighted_losses)
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = Z, labels = Y))
 
     return cost
 
@@ -208,7 +208,7 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
     # Forward propagation: Build the forward propagation in the tensorflow graph
     #parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 128, "W6":128, "W7": 256, "W8": 9}
     #Z6_F, Z6_E = forward_propagation_expanded(X,parameters)
-    parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 256, "W6": 9}
+    parameters = { "W1": 16, "W2": 32, "W3": 64, "W4": 64, "W5": 256, "W6": 2}
     Z6_F, Z6_E = forward_propagation(X, parameters)
 
     # Cost function: Add cost function to tensorflow graph
@@ -269,8 +269,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
         predict_E, YE_labels_others, predict_E_ones, YE_labels_ones = composite_cost(predict_E, YE_labels)
 
         # NonOnes
-        correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 4
-        correct_predictionE = tf.abs(tf.subtract(predict_E, YE_labels_others)) <= 4
+        correct_predictionF = tf.abs(tf.subtract(predict_F, YF_labels_others)) <= 1
+        correct_predictionE = tf.abs(tf.subtract(predict_E, YE_labels_others)) <= 1
         # Ones
         correct_predictionF_ones = tf.equal(predict_F_ones, YF_labels_ones)
         correct_predictionE_ones = tf.equal(predict_E_ones, YE_labels_ones)
@@ -308,8 +308,8 @@ def model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, gene
 def main(map_directory=False):
     generate = bool(map_directory)
     X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames = loadData()
-    Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.0001,
-              num_epochs=5, minibatch_size = 16, print_cost = True)
+    Z6_F, Z6_E, X = model(X_train, YF_train, YE_train, X_test, YF_test, YE_test, filenames, generate, learning_rate = 0.0009,
+              num_epochs=10, minibatch_size = 16, print_cost = True)
     if map_directory:
         filenames, X_map, _, _ = tiffToArray(map_directory) # X is a list
         X_map = np.stack(X_map, axis=0)
